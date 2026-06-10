@@ -90,7 +90,7 @@ nmap -sV -sC -p- 192.168.56.103 -oN phase1_portscan.txt
 
 ---
 
-## 2.4 Service Enumeration
+## 1.3 Service Enumeration
 
 #### FTP – Port 21 (vsftpd 2.3.4)
 
@@ -164,3 +164,81 @@ nmap -p 80 --script=http-title,http-headers 192.168.56.103
 - Multiple vulnerable web applications hosted
 
 **Screenshot:** ![port80 scan](screenshots/serviceenumerationhttpport80.png)
+
+---
+
+## 2.5 Web Enumeration
+ 
+**Tool Used:** `dirb` v2.22
+ 
+**Command:**
+```bash
+dirb http://192.168.56.103
+```
+ 
+**Scan Statistics:**
+- Wordlist: `/usr/share/dirb/wordlists/common.txt`
+- Words tested: 4,612
+- Total URLs found: 42
+- Scan duration: ~36 seconds (18:54:17 – 18:54:53)
+**Web Applications and Directories Discovered:**
+ 
+| URL / Path                          | HTTP Code | Size     | Finding / Risk                                      |
+|-------------------------------------|-----------|----------|-----------------------------------------------------|
+| `/index.php`                        | 200       | 891 B    | Default landing page                                |
+| `/phpinfo.php`                      | 200       | 48104 B  | Full PHP server config exposed — information disclosure |
+| `/phpinfo`                          | 200       | 48092 B  | Duplicate phpinfo access without extension          |
+| `/dav/`                             | Directory | Listable | WebDAV enabled — unauthenticated file upload vector |
+| `/phpMyAdmin/`                      | Directory | —        | MySQL admin panel — direct database access          |
+| `/phpMyAdmin/index.php`             | 200       | 4145 B   | phpMyAdmin login portal                             |
+| `/phpMyAdmin/setup/index.php`       | 200       | 8626 B   | phpMyAdmin setup page — should not be public        |
+| `/phpMyAdmin/setup/config`          | 303       | 1370 B   | Config redirect — potential sensitive data exposure |
+| `/phpMyAdmin/phpmyadmin`            | 200       | 21389 B  | Additional phpMyAdmin access point                  |
+| `/phpMyAdmin/ChangeLog`             | 200       | 40540 B  | Version disclosure via public changelog             |
+| `/phpMyAdmin/README`                | 200       | 2624 B   | Version disclosure via public README                |
+| `/test/`                            | Directory | Listable | Test directory — full contents browseable           |
+| `/twiki/`                           | Directory | —        | TWiki — vulnerable wiki platform                   |
+| `/twiki/bin/`                       | Directory | Listable | TWiki binaries publicly accessible                  |
+| `/twiki/index.html`                 | 200       | 782 B    | TWiki landing page                                  |
+| `/twiki/lib/`                       | Directory | Listable | TWiki library files exposed                         |
+| `/twiki/pub/`                       | Directory | Listable | TWiki public uploads directory browseable           |
+| `/cgi-bin/`                         | 403       | 295 B    | CGI directory present (access denied)               |
+| `/server-status`                    | 403       | 300 B    | Apache server status page present (access denied)   |
+ 
+**Notable Security Observations from dirb:**
+- `/dav/` — directory listing is **fully enabled**, contents are browseable without authentication
+- `/test/` — directory listing is **fully enabled**, potentially exposes test scripts or sensitive files
+- Multiple phpMyAdmin subdirectories are listable — exposes internal library structure and version info
+- TWiki `bin/`, `lib/`, and `pub/` directories are all listable — source files and uploads are browseable
+- `phpinfo.php` is publicly accessible — exposes PHP version, loaded modules, server paths, and configuration
+> 📸 *[Insert dirb scan terminal screenshot here]*
+> 📸 *[Insert browser screenshot of phpMyAdmin login page — http://192.168.56.103/phpMyAdmin/]*
+> 📸 *[Insert browser screenshot of phpinfo.php output — http://192.168.56.103/phpinfo.php]*
+> 📸 *[Insert browser screenshot of /dav/ directory listing — http://192.168.56.103/dav/]*
+> 📸 *[Insert browser screenshot of TWiki — http://192.168.56.103/twiki/]*
+
+---
+
+### 2.6 Phase 1 Deliverables Summary
+
+| Finding               | Result                                                                                          |
+|-----------------------|-------------------------------------------------------------------------------------------------|
+| Target IP             | 192.168.56.103                                                                                  |
+| Attacker IP           | 192.168.56.102                                                                                  |
+| MAC Address           | 08:00:27:4F:2A:5E (Oracle VirtualBox)                                                           |
+| Hostname              | metasploitable.localdomain                                                                      |
+| OS                    | Linux / Unix (Samba fingerprint: Ubuntu 8.04)                                                   |
+| Open Ports (30 total) | 21, 22, 23, 25, 53, 80, 111, 139, 445, 512, 513, 514, 1099, 1524, 2049, 2121, 3306, 3632, 5432, 5900, 6000, 6667, 6697, 8009, 8180, 8787, 45054, 45407, 53103, 54882 |
+| Key Services Found    | vsftpd 2.3.4, OpenSSH 4.7p1, Apache 2.2.8, Samba 3.0.20, MySQL 5.0.51a, ProFTPD 1.3.1, VNC 3.3, PostgreSQL 8.3, UnrealIRCd, Ruby DRb, Apache Tomcat 5.5 |
+| Web Applications Found | phpMyAdmin (with setup page), TWiki, WebDAV (/dav/), phpinfo.php, Test directory (/test/)                         |
+| Critical Notes        | Anonymous FTP allowed; root backdoor shell on port 1524; SMB signing disabled; SSLv2 supported on SMTP |
+
+---
+
+## 3. Phase 2 – Password Security Assessment
+
+### 3.1 Objective
+Assess the strength of passwords used on the Metasploitable2 system by extracting password hashes and performing a password audit using John the Ripper.
+
+---
+
