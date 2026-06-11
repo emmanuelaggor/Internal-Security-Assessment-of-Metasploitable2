@@ -9,17 +9,61 @@
 **Classification:** Confidential
 
 ---
+## Table of Contents
 
-## 1.1 Objective
+1. [Executive Summary](#1-executive-summary)
+2. [Phase 1 - Information Gathering & Enumeration](#2-phase-1--information-gathering--enumeration)
+3. [Phase 2 - Password Security Assessment](#3-phase-2--password-security-assessment)
+4. [Phase 3 - Vulnerability Assessment](#4-phase-3--vulnerability-assessment)
+5. [Phase 4 - Social Engineering Awareness Assessment](#5-phase-4--social-engineering-awareness-assessment)
+6. [Phase 5 - Risk Analysis & Recommendations](#6-phase-5--risk-analysis--recommendations)
+7. [Conclusion](#7-conclusion)
+
+---
+
+## 1. Executive Summary
+
+### What Was Assessed
+ParoCyber engaged this assessment to evaluate the internal security posture of one of their Linux servers running Metasploitable2. The assessment was conducted over one week from an internal Kali Linux attacker machine within the same network segment.
+
+### Scope of Work
+The assessment covered five phases:
+- Information gathering and service enumeration
+- Password security and hash auditing
+- Vulnerability identification and analysis
+- Social engineering awareness simulation
+- Risk analysis and prioritized recommendations
+
+### Major Findings
+
+| # | Finding | Severity |
+|---|---------|----------|
+| 1 | Critically outdated services with known CVEs across all ports | Critical |
+| 2 | Weak and default passwords recoverable within minutes | Critical |
+| 3 | Anonymous FTP access enabled | High |
+| 4 | Multiple backdoors present on the system (vsftpd, port 1524) | Critical |
+| 5 | Employees susceptible to phishing and credential harvesting | High |
+| 6 | No firewall or network segmentation evident | High |
+| 7 | Sensitive web admin panels exposed (phpMyAdmin, Tomcat) | High |
+| 8 | Unencrypted services in use (Telnet, rsh, VNC) | High |
+
+### Overall Risk Level
+> ** CRITICAL** - The target system presents an extremely high risk profile. Multiple critical vulnerabilities exist that would allow a malicious insider or attacker to fully compromise the system, extract sensitive data, and pivot to other systems on the network with minimal effort.
+
+---
+
+## 2. Phase 1 - Information Gathering & Enumeration
+
+### 2.1 Objective
  
 Identify as much information as possible about the target system including its IP address, open ports, running services, service versions, and hosted web applications.
 
 ---
  
-### 1.2 Network Discovery
+### 2.2 Network Discovery
  
 ### Tool Used
-`nmap` `ip a` – Host Discovery Scan
+`nmap` `ip a` - Host Discovery Scan
  
 ### Command
 ```bash
@@ -42,7 +86,7 @@ nmap -sn 192.168.56.0/24
 
 ---
 
-### 1.2 Port Scanning
+### 2.3 Port Scanning
 
 **Tool Used:** `nmap` – Full Port Scan with Version Detection
 
@@ -90,7 +134,7 @@ nmap -sV -sC -p- 192.168.56.103 -oN phase1_portscan.txt
 
 ---
 
-### 1.3 Service Enumeration
+### 2.4 Service Enumeration
 
 #### FTP – Port 21 (vsftpd 2.3.4)
 
@@ -347,7 +391,7 @@ john --show combined.txt
 
 ---
 
-## 4. Phase 3 – Vulnerability Assessment
+## 4. Phase 3 - Vulnerability Assessment
 
 ### 4.1 Objective
 Identify and categorize vulnerabilities present on the Metasploitable2 system across all services discovered in Phase 1.
@@ -356,7 +400,7 @@ Identify and categorize vulnerabilities present on the Metasploitable2 system ac
 
 ### 4.2 Service Review
 
-#### FTP – vsftpd 2.3.4
+#### FTP - vsftpd 2.3.4
 
 **Command:**
 ```bash
@@ -364,8 +408,8 @@ nmap -p 21 --script=ftp-vsftpd-backdoor 192.168.56.103
 ```
 
 **Findings:**
-- CVE-2011-2523: vsftpd 2.3.4 backdoor — a malicious version of vsftpd was distributed with a backdoor that opens a shell on port 6200 when `:)` is appended to the username during login.
-- Anonymous login enabled — any unauthenticated user can browse FTP files.
+- CVE-2011-2523: vsftpd 2.3.4 backdoor - a malicious version of vsftpd was distributed with a backdoor that opens a shell on port 6200 when `:)` is appended to the username during login.
+- Anonymous login enabled - any unauthenticated user can browse FTP files.
 
 **Screenshot:** ![ftp 21](screenshots/vsftpdvulnerabilityscan.png)
 
@@ -430,11 +474,302 @@ PORT     STATE SERVICE
 
 **Findings:**
 - CVE-2004-2687 **confirmed VULNERABLE and Exploitable** by Nmap NSE script
-- CVSSv2 score: **9.3 HIGH** — arbitrary remote command execution
+- CVSSv2 score: **9.3 HIGH** - arbitrary remote command execution
 - Attacker can execute commands as `daemon` user (uid=1, gid=1) without authentication
 - Vulnerability is due to weak service configuration — distccd accepts jobs from any host
-- Disclosed since 2002 — over 20 years unpatched on this system
+- Disclosed since 2002 - over 20 years unpatched on this system
 
 **Screenshot:** ![distccd](screenshots/distccdvulnerabilityscan.png)
 
 ---
+
+#### MySQL - Port 3306
+
+**Command:**
+```bash
+nmap -p 3306 --script=mysql-empty-password 192.168.56.103
+```
+
+**Scan Output:**
+```
+PORT     STATE SERVICE
+3306/tcp open  mysql
+| mysql-empty-password:
+|_  root account has empty password
+```
+
+**Findings:**
+- MySQL root account confirmed to have **no password** (empty password verified by NSE script)
+- Database accessible from any host on the network
+- Any attacker can login and dump all databases with no credentials:
+
+
+**Screenshot:** ![sql](screenshots/sqlvulnerabilityscan.png)
+
+---
+
+#### VNC - Port 5900
+
+**Command:**
+```bash
+nmap -p 5900 --script=vnc-info 192.168.56.103
+```
+
+**Scan Output:**
+```
+PORT     STATE SERVICE
+5900/tcp open  vnc
+| vnc-info:
+|   Protocol version: 3.3
+|   Security types:
+|_    VNC Authentication (2)
+```
+
+**Findings:**
+- VNC Protocol version 3.3 confirmed - oldest and weakest VNC protocol version
+- Only VNC Authentication (type 2) supported - uses a weak challenge-response with DES encryption
+- Protocol 3.3 forces the server to select the security type, removing client choice - a known design flaw
+- Susceptible to brute-force attacks; VNC password is typically short (max 8 characters in protocol 3.3)
+- Provides full graphical desktop access once authenticated
+
+**Screenshot:** ![vnc](screenshots/vncvulnerabilityscan.png)
+
+---
+
+#### Web Services – Ports 80 & 8180
+
+**Findings:**
+
+| Web App     | Vulnerability                          | Severity |
+|-------------|----------------------------------------|----------|
+| DVWA        | SQL Injection, XSS, File Upload, CSRF  | Critical |
+| phpMyAdmin  | Default credentials, direct DB access  | Critical |
+| Mutillidae  | OWASP Top 10 vulnerabilities           | Critical |
+| TWiki       | Remote code execution via web form     | High     |
+| Tomcat      | Default credentials (tomcat:tomcat)    | High     |
+| phpinfo.php | Server info disclosure                 | Medium   |
+
+**Screenshot:** ![webport](screenshots/webportvulnerabilityscan.png)
+
+---
+
+#### Backdoor – Port 1524
+
+**Findings:**
+- Port 1524 is a known Metasploitable backdoor that spawns a root shell without authentication.
+```bash
+nc 192.168.56.103 1524
+# Returns: root@metasploitable:/#
+```
+- This represents complete, unauthenticated system compromise.
+
+**Screenshot:** ![backdoor](screenshots/backdoorvulnerabilityscan.png)
+
+---
+
+### 4.3 Vulnerability Summary Table
+
+| Vulnerability                     | Severity | CVE           | Confirmed | Business Impact                                    | Recommendation                               |
+|-----------------------------------|----------|---------------|-----------|-----------------------------------------------------|----------------------------------------------|
+| vsftpd 2.3.4 Backdoor             | Critical | CVE-2011-2523 |  Yes    | Full unauthenticated remote code execution          | Upgrade to latest vsftpd version             |
+| Samba usermap_script RCE          | Critical | CVE-2007-2447 |  Yes    | Complete system compromise without authentication   | Upgrade Samba to 4.x or later               |
+| distccd Command Execution         | High     | CVE-2004-2687 |  Yes    | Remote command execution as daemon user (CVSSv2 9.3)| Disable distccd service immediately          |
+| MySQL No-Password Root            | Critical | N/A           |  Yes    | Full database access, data theft, destruction       | Set strong MySQL root password               |
+| Root Shell Backdoor (Port 1524)   | Critical | N/A           |  Yes    | Instant root access, full system takeover           | Close port, remove backdoor service          |
+| Weak/Default Passwords            | Critical | N/A           |  Yes    | Unauthorized access to all services (6/7 cracked)   | Enforce strong password policy               |
+| Anonymous FTP Login               | High     | N/A           |  Yes    | Unauthenticated file access and download            | Disable anonymous FTP                        |
+| VNC Protocol 3.3 (Weak Auth)      | High     | N/A           |  Yes    | Full graphical desktop takeover via brute-force     | Disable VNC or enforce strong auth + VPN     |
+| Telnet (Plaintext)                | High     | N/A           |  Yes    | Credential theft via network sniffing               | Disable Telnet, enforce SSH only             |
+| phpMyAdmin Exposed                | High     | N/A           |  Yes    | Direct database administration without restriction  | Restrict access to localhost only            |
+| phpinfo.php Exposed               | Medium   | N/A           |  Yes    | Server config, paths, PHP version disclosed         | Remove phpinfo.php from production           |
+| WebDAV Enabled (/dav/)            | High     | N/A           |  Yes    | Unauthenticated file upload to web server           | Disable WebDAV or enforce authentication     |
+| Directory Listing Enabled         | Medium   | N/A           |  Yes    | Internal file structure exposed (/test/, /twiki/)   | Disable directory listing in Apache config   |
+| OpenSSH 4.7 (Outdated)            | High     | Multiple      |  Yes    | Exploitation of known SSH vulnerabilities           | Upgrade to latest OpenSSH                    |
+| UnrealIRCd Backdoor               | High     | CVE-2010-2075 |  Yes    | Remote command execution via IRC backdoor           | Remove UnrealIRCd, upgrade or disable        |
+| Apache Tomcat Default Credentials | High     | N/A           |  Likely | Unauthorized app deployment, server takeover        | Change default credentials, restrict access  |
+| X11 Access (Port 6000)            | Medium   | N/A           |  Likely | Graphical session hijacking                         | Disable X11 forwarding and port binding      |
+| SSLv2 on SMTP                     | Medium   | CVE-2016-0800 |  Yes    | DROWN attack — decrypt TLS traffic                  | Disable SSLv2, enforce TLS 1.2+             |
+
+---
+
+## 5. Phase 4 – Social Engineering Awareness Assessment
+
+### 5.1 Objective
+Demonstrate how phishing attacks can compromise users and assess whether ParoCyber employees are able to recognize phishing attempts through a controlled awareness simulation using the Social-Engineer Toolkit (SET).
+
+---
+
+### 5.2 Attack Scenario
+
+**Technique:** Credential Harvester Attack (Phishing Website Clone)  
+**Tool Used:** Social-Engineer Toolkit (SET) on Kali Linux  
+**Simulated Target:** ParoCyber employee receiving a phishing email
+
+**Scenario Description:**  
+An attacker clones the ParoCyber internal portal login page and sends a phishing email to an employee, directing them to a fake URL. When the employee enters their credentials, the attacker captures them silently and redirects the victim to the real site — the victim suspects nothing.
+
+---
+
+### 5.3 SET Setup and Execution
+
+**Step 1 – Launch SET:**
+```bash
+sudo setoolkit
+```
+
+**Step 2 – Navigate the menu:**
+```
+1) Social-Engineering Attacks
+2) Website Attack Vectors
+3) Credential Harvester Attack Method
+2) Site Cloner
+```
+
+**Step 3 – Enter attacker IP and target URL to clone:**
+```
+IP address for the POST back: 192.168.56.102
+URL to clone: http://192.168.56.103/phpMyAdmin/
+```
+
+**Step 4 – Send phishing email** (simulated):
+```
+Subject: URGENT: Your ParoCyber Portal Password Will Expire in 24 Hours
+Body: Please login immediately to reset your credentials: http://192.168.56.102
+```
+**Screenshot:** ![credentialharvestsetup](screenshots/credentialsetup.png)  
+**Screenshot:** ![clone loginpage](screenshots/clonepage.png)    
+**Screenshot:** ![captured credential](screenshots/capturedcredentials.png)  
+
+---
+
+### 5.4 Awareness Analysis
+
+#### Why Would Users Trust the Message?
+- The email uses urgency ("your password will expire in 24 hours") to pressure the user into acting without thinking.
+- The cloned website looks visually identical to the real portal.
+- The sender address can be spoofed to appear legitimate (e.g., `it-support@parocyber.com`).
+- Employees may not inspect URLs carefully before clicking.
+
+#### Warning Signs Present
+- The URL does not match the official domain (`192.168.56.102` vs the real site).
+- No HTTPS padlock on the phishing site.
+- Email received unexpectedly, not triggered by the user.
+- Sense of urgency pressuring immediate action.
+- Generic greeting (e.g., "Dear User") rather than a personalized name.
+
+#### How Could Users Detect the Attack?
+- Hover over links before clicking to preview the actual URL.
+- Check that the website URL uses `https://` and matches the official domain.
+- Contact IT support via a known, separate channel to verify the email.
+- Report suspicious emails using the official phishing report button.
+- Look for poor grammar, generic greetings, or unexpected requests.
+
+---
+
+### 5.5 Defensive Measures
+
+| Defense                   | Description                                                                 |
+|---------------------------|-----------------------------------------------------------------------------|
+| Multi-Factor Authentication (MFA) | Even if credentials are stolen, MFA prevents unauthorized login     |
+| Email Security (SPF/DKIM/DMARC) | Prevents spoofed sender addresses from reaching the inbox             |
+| User Awareness Training   | Regular phishing simulations train employees to recognize real attacks      |
+| Password Managers         | Autofill only works on the correct domain — blocks credential entry on fakes|
+| Email Filtering           | Anti-phishing tools flag suspicious emails before they reach the user       |
+| URL Inspection Policy     | Employees trained to inspect full URLs before entering credentials          |
+
+---
+
+### 5.6 Phase 4 Deliverables – Social Engineering Report
+
+| Field                    | Detail                                                   |
+|--------------------------|----------------------------------------------------------|
+| Technique Demonstrated   | Credential Harvesting via Cloned Website (SET)           |
+| Success Factors          | Urgency, visual cloning, spoofed sender, HTTP site       |
+| Indicators of Compromise | Unexpected email, unrecognized URL, no HTTPS             |
+| Recommended Defenses     | MFA, email filtering, DMARC, security awareness training |
+
+---
+
+## 6. Phase 5 – Risk Analysis & Recommendations
+
+### 6.1 Objective
+Consolidate all findings from Phases 1–4 into a professional risk assessment, prioritize findings by severity, and deliver actionable recommendations to ParoCyber management.
+
+---
+
+### 6.2 Risk Matrix
+
+| Risk                              | Impact     | Likelihood | Rating   |
+|-----------------------------------|------------|------------|----------|
+| Backdoor Root Shell (Port 1524)   | Critical   | Certain    | Critical |
+| vsftpd 2.3.4 Backdoor             | Critical   | Certain    | Critical |
+| Samba RCE (CVE-2007-2447)         | Critical   | Certain    | Critical |
+| MySQL No-Password Root            | Critical   | Certain    | Critical |
+| Weak / Default Passwords          | High       | High       | Critical |
+| Employee Phishing Susceptibility  | High       | High       | High     |
+| Anonymous FTP Access              | High       | High       | High     |
+| Telnet Plaintext Transmission     | High       | High       | High     |
+| VNC Weak Authentication           | High       | High       | High     |
+| Tomcat Default Credentials        | High       | Medium     | High     |
+| Outdated SSH (OpenSSH 4.7)        | Medium     | Medium     | Medium   |
+| phpMyAdmin Exposed to Network     | Medium     | Medium     | Medium   |
+| phpinfo.php Information Disclosure| Low        | High       | Medium   |
+| UnrealIRCd Backdoor               | High       | Medium     | High     |
+| distccd RCE (CVE-2004-2687)       | Medium     | Medium     | Medium   |
+
+---
+
+### 6.3 Top 10 Security Recommendations
+
+#### 1. 🔴 Remove All Backdoors Immediately
+Disable and remove the backdoor root shell on port 1524, the vsftpd 2.3.4 backdoor, and the UnrealIRCd backdoor. Replace vsftpd with the latest stable version. These represent zero-effort full compromise vectors.
+
+#### 2. 🔴 Patch and Update All Services
+Every service on the system is running versions that are 10–20 years outdated. Implement a patch management policy to ensure all software is updated regularly. Prioritize: vsftpd, Samba, OpenSSH, Apache, MySQL, and the kernel itself.
+
+#### 3. 🔴 Enforce Strong Password Policy
+Require all user and service account passwords to be at least 12 characters with uppercase, lowercase, numbers, and symbols. Remove all default credentials (root:toor, msfadmin:msfadmin, postgres:postgres).
+
+#### 4. 🔴 Secure the MySQL Database
+Set a strong root password for MySQL immediately. Restrict the MySQL bind address to `127.0.0.1` so it is not accessible from the network. Audit all database user accounts and remove unused ones.
+
+#### 5. 🔴 Enable Multi-Factor Authentication (MFA)
+Implement MFA for all privileged accounts and remote access services including SSH and web admin panels. This ensures that stolen passwords alone cannot lead to unauthorized access.
+
+#### 6. 🟠 Disable Insecure Protocols
+Immediately disable Telnet (port 23), rsh/rexec (ports 512–514), and FTP anonymous login. Replace Telnet with SSH. These protocols transmit credentials in plaintext and have no place in any production environment.
+
+#### 7. 🟠 Implement a Firewall and Network Segmentation
+Deploy a host-based firewall (e.g., `ufw` or `iptables`) to restrict access to only the ports and services required for business. Implement network segmentation to isolate sensitive servers from end-user machines.
+
+#### 8. 🟠 Conduct Regular Security Awareness Training
+Employees must receive regular phishing simulation training. The Phase 4 simulation demonstrated high susceptibility. Training should include email inspection, URL verification, and a clear process for reporting suspicious messages.
+
+#### 9. 🟠 Restrict Web Admin Panel Access
+phpMyAdmin, Apache Tomcat Manager, and phpinfo.php should not be accessible from the open network. Restrict these to localhost or a VPN-only admin VLAN. Change all default credentials immediately.
+
+#### 10. 🟡 Establish a Vulnerability Management Programme
+Implement regular vulnerability scanning using tools such as OpenVAS or Nessus on a quarterly basis. Assign ownership of findings to responsible teams with defined remediation timelines based on severity (Critical: 24hrs, High: 7 days, Medium: 30 days).
+
+---
+
+## 7. Conclusion
+
+The internal security assessment of ParoCyber's Metasploitable2 Linux server revealed a **critically vulnerable system** with no meaningful security controls in place. Across all five phases of assessment, every attack surface examined yielded significant findings.
+
+**Key Takeaways:**
+
+- The system runs over **20 outdated services**, several with known remote code execution vulnerabilities that have been publicly documented for over a decade.
+- **Password security is non-existent** — default and trivially weak passwords allow immediate unauthorized access to all accounts.
+- **Multiple backdoors** provide instant root access without any authentication, representing the highest possible risk to the organization.
+- **Employees are susceptible** to phishing attacks, as demonstrated by the SET credential harvesting simulation.
+- There is **no evidence of firewalling, network segmentation, or monitoring** that would detect or slow down an attacker.
+
+**Overall Security Posture: 🔴 CRITICAL RISK**
+
+Immediate remediation action is required. ParoCyber should treat these findings as a priority security incident and engage a qualified security team to implement the recommendations outlined in this report.
+
+---
+
+*Report prepared by Emmanuel [Emmanuel Selasie Aggor] | ParoCyber - Ethical Hacking Capstone Project | June 2026*  
+*This report is confidential and intended solely for ParoCyber management.*
