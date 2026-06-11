@@ -204,7 +204,7 @@ nmap -p 80 --script=http-title,http-headers 192.168.56.103
 **Findings:**
 - Server: Apache/2.2.8 (Ubuntu) DAV/2
 - Page title: `Metasploitable2 - Linux`
-- WebDAV enabled — potential file upload vector
+- WebDAV enabled - potential file upload vector
 - Multiple vulnerable web applications hosted
 
 **Screenshot:** ![port80 scan](screenshots/serviceenumerationhttpport80.png)
@@ -250,10 +250,10 @@ dirb http://192.168.56.103
 | `/server-status`                    | 403       | 300 B    | Apache server status page present (access denied)   |
  
 **Notable Security Observations from dirb:**
-- `/dav/` — directory listing is **fully enabled**, contents are browseable without authentication
-- `/test/` — directory listing is **fully enabled**, potentially exposes test scripts or sensitive files
-- Multiple phpMyAdmin subdirectories are listable — exposes internal library structure and version info
-- TWiki `bin/`, `lib/`, and `pub/` directories are all listable — source files and uploads are browseable
+- `/dav/` - directory listing is **fully enabled**, contents are browseable without authentication
+- `/test/` - directory listing is **fully enabled**, potentially exposes test scripts or sensitive files
+- Multiple phpMyAdmin subdirectories are listable - exposes internal library structure and version info
+- TWiki `bin/`, `lib/`, and `pub/` directories are all listable - source files and uploads are browseable
 - `phpinfo.php` is publicly accessible - exposes PHP version, loaded modules, server paths, and configuration
 **Screenshot:** ![dirb scan](screenshots/dirbscan.png)
 **Screenshot:** ![phpMyAdmin](screenshots/adminbrowser.png)
@@ -543,14 +543,12 @@ PORT     STATE SERVICE
 
 | Web App     | Vulnerability                          | Severity |
 |-------------|----------------------------------------|----------|
-| DVWA        | SQL Injection, XSS, File Upload, CSRF  | Critical |
 | phpMyAdmin  | Default credentials, direct DB access  | Critical |
 | Mutillidae  | OWASP Top 10 vulnerabilities           | Critical |
 | TWiki       | Remote code execution via web form     | High     |
 | Tomcat      | Default credentials (tomcat:tomcat)    | High     |
 | phpinfo.php | Server info disclosure                 | Medium   |
 
-**Screenshot:** ![webport](screenshots/webportvulnerabilityscan.png)
 
 ---
 
