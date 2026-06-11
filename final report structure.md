@@ -52,7 +52,7 @@ The assessment covered five phases:
 
 ---
 
-## 2. Phase 1 - Information Gathering & Enumeration
+## 2. Phase 1 – Information Gathering & Enumeration
 
 ### 2.1 Objective
  
@@ -391,7 +391,7 @@ john --show combined.txt
 
 ---
 
-## 4. Phase 3 - Vulnerability Assessment
+## 4. Phase 3 – Vulnerability Assessment
 
 ### 4.1 Objective
 Identify and categorize vulnerabilities present on the Metasploitable2 system across all services discovered in Phase 1.
