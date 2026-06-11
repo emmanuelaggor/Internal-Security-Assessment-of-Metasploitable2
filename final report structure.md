@@ -760,7 +760,7 @@ The internal security assessment of ParoCyber's Metasploitable2 Linux server rev
 **Key Takeaways:**
 
 - The system runs over **20 outdated services**, several with known remote code execution vulnerabilities that have been publicly documented for over a decade.
-- **Password security is non-existent** — default and trivially weak passwords allow immediate unauthorized access to all accounts.
+- **Password security is non-existent** - default and trivially weak passwords allow immediate unauthorized access to all accounts.
 - **Multiple backdoors** provide instant root access without any authentication, representing the highest possible risk to the organization.
 - **Employees are susceptible** to phishing attacks, as demonstrated by the SET credential harvesting simulation.
 - There is **no evidence of firewalling, network segmentation, or monitoring** that would detect or slow down an attacker.
