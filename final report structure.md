@@ -149,7 +149,7 @@ nmap -sV -p 21 --script=ftp-anon,ftp-syst 192.168.56.103
 - Connected client logged in as: `ftp`
 - Connection type: plaintext (no encryption on control or data connections)
 - Session timeout: 300 seconds
-- Known backdoor: CVE-2011-2523 — vsftpd 2.3.4 backdoor allows unauthenticated remote command execution via a smiley-face `:)` in the username
+- Known backdoor: CVE-2011-2523 - vsftpd 2.3.4 backdoor allows unauthenticated remote command execution via a smiley-face `:)` in the username
 
 **Screenshot:** ![port21 scan](screenshots/serviceenumerationftpport21.png)
 
@@ -163,10 +163,10 @@ nmap -p 22 --script=ssh-hostkey 192.168.56.103
 ```
 
 **Findings:**
-- Version: OpenSSH 4.7p1 Debian 8ubuntu1 (protocol 2.0) — released 2007, critically outdated
+- Version: OpenSSH 4.7p1 Debian 8ubuntu1 (protocol 2.0) - released 2007, critically outdated
 - DSA host key (1024-bit): `60:0f:cf:e1:c0:5f:6a:74:d6:90:24:fa:c4:d5:6c:cd`
 - RSA host key (2048-bit): `56:56:24:0f:21:1d:de:a7:2b:ae:61:b1:24:3d:e8:f3`
-- Susceptible to brute-force attacks — no rate limiting configured
+- Susceptible to brute-force attacks - no rate limiting configured
 
 **Screenshot:** ![port22 scan](screenshots/serviceenumerationsshport22.png)
 
@@ -186,9 +186,9 @@ nmap -p 445 --script=smb-os-discovery 192.168.56.103
 - Domain: `localdomain`
 - FQDN: `metasploitable.localdomain`
 - System time: 2026-06-10T14:38:56-04:00
-- Message signing: **disabled** (dangerous — enables relay attacks)
+- Message signing: **disabled** (dangerous - enables relay attacks)
 - SMB2: negotiation failed (only SMBv1 supported)
-- Vulnerable to CVE-2007-2447 (Samba usermap_script — unauthenticated RCE)
+- Vulnerable to CVE-2007-2447 (Samba usermap_script - unauthenticated RCE)
 
 **Screenshot:** ![port445 scan](screenshots/serviceenumerationsmbport445.png)
 
@@ -230,18 +230,18 @@ dirb http://192.168.56.103
 | URL / Path                          | HTTP Code | Size     | Finding / Risk                                      |
 |-------------------------------------|-----------|----------|-----------------------------------------------------|
 | `/index.php`                        | 200       | 891 B    | Default landing page                                |
-| `/phpinfo.php`                      | 200       | 48104 B  | Full PHP server config exposed — information disclosure |
+| `/phpinfo.php`                      | 200       | 48104 B  | Full PHP server config exposed - information disclosure |
 | `/phpinfo`                          | 200       | 48092 B  | Duplicate phpinfo access without extension          |
-| `/dav/`                             | Directory | Listable | WebDAV enabled — unauthenticated file upload vector |
-| `/phpMyAdmin/`                      | Directory | —        | MySQL admin panel — direct database access          |
+| `/dav/`                             | Directory | Listable | WebDAV enabled - unauthenticated file upload vector |
+| `/phpMyAdmin/`                      | Directory | -        | MySQL admin panel - direct database access          |
 | `/phpMyAdmin/index.php`             | 200       | 4145 B   | phpMyAdmin login portal                             |
-| `/phpMyAdmin/setup/index.php`       | 200       | 8626 B   | phpMyAdmin setup page — should not be public        |
-| `/phpMyAdmin/setup/config`          | 303       | 1370 B   | Config redirect — potential sensitive data exposure |
+| `/phpMyAdmin/setup/index.php`       | 200       | 8626 B   | phpMyAdmin setup page - should not be public        |
+| `/phpMyAdmin/setup/config`          | 303       | 1370 B   | Config redirect - potential sensitive data exposure |
 | `/phpMyAdmin/phpmyadmin`            | 200       | 21389 B  | Additional phpMyAdmin access point                  |
 | `/phpMyAdmin/ChangeLog`             | 200       | 40540 B  | Version disclosure via public changelog             |
 | `/phpMyAdmin/README`                | 200       | 2624 B   | Version disclosure via public README                |
-| `/test/`                            | Directory | Listable | Test directory — full contents browseable           |
-| `/twiki/`                           | Directory | —        | TWiki — vulnerable wiki platform                   |
+| `/test/`                            | Directory | Listable | Test directory - full contents browseable           |
+| `/twiki/`                           | Directory | -        | TWiki - vulnerable wiki platform                   |
 | `/twiki/bin/`                       | Directory | Listable | TWiki binaries publicly accessible                  |
 | `/twiki/index.html`                 | 200       | 782 B    | TWiki landing page                                  |
 | `/twiki/lib/`                       | Directory | Listable | TWiki library files exposed                         |
@@ -254,7 +254,7 @@ dirb http://192.168.56.103
 - `/test/` — directory listing is **fully enabled**, potentially exposes test scripts or sensitive files
 - Multiple phpMyAdmin subdirectories are listable — exposes internal library structure and version info
 - TWiki `bin/`, `lib/`, and `pub/` directories are all listable — source files and uploads are browseable
-- `phpinfo.php` is publicly accessible — exposes PHP version, loaded modules, server paths, and configuration
+- `phpinfo.php` is publicly accessible - exposes PHP version, loaded modules, server paths, and configuration
 **Screenshot:** ![dirb scan](screenshots/dirbscan.png)
 **Screenshot:** ![phpMyAdmin](screenshots/adminbrowser.png)
 **Screenshot:** ![phpinfo](screenshots/phpinfo.png)
