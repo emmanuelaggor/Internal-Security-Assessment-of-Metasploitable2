@@ -12,7 +12,7 @@
 ## Table of Contents
 
 1. [Executive Summary](#1-executive-summary)
-2. [Phase 1 - Information Gathering & Enumeration](#2-phase-1--information-gathering--enumeration)
+2. [Phase 1 - Information Gathering & Enumeration](#2-phase-1-information-gathering--enumeration)
 3. [Phase 2 - Password Security Assessment](#3-phase-2--password-security-assessment)
 4. [Phase 3 - Vulnerability Assessment](#4-phase-3--vulnerability-assessment)
 5. [Phase 4 - Social Engineering Awareness Assessment](#5-phase-4--social-engineering-awareness-assessment)
