@@ -340,16 +340,17 @@ unshadow /etc/passwd /etc/shadow > combined.txt
 john --wordlist=/usr/share/wordlists/rockyou.txt combined.txt
 ```
 
-**View cracked passwords:**
-```bash
-john --show combined.txt
-```
 
 **Screenshot:** ![johntheriper](screenshots/johntheripercracking.png)
 
 ---
 
 ### 3.4 Password Risk Assessment
+
+**View cracked passwords:**
+```bash
+john --show combined.txt
+```
 
 | User     | UID  | Password Recovered | Password    | Strength | Risk     |
 |----------|------|--------------------|-------------|----------|----------|
@@ -445,7 +446,7 @@ nmap -p 445 --script=smb-vuln-ms08-067,smb-vuln-cve-2007-2447 192.168.56.103
 - CVE-2007-2447: Samba usermap_script vulnerability - allows unauthenticated remote code execution by injecting shell metacharacters into the username field.
 - Samba version 3.0.20 is critically outdated.
 
-**Screenshot:** ![samba](screenshots/sambavulnerabilityscan.png)
+**Screenshot:** ![samba](screenshots/sambavulnerbilityscan.png)
 
 ---
 
