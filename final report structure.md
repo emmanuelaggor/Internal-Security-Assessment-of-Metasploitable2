@@ -255,11 +255,11 @@ dirb http://192.168.56.103
 - Multiple phpMyAdmin subdirectories are listable — exposes internal library structure and version info
 - TWiki `bin/`, `lib/`, and `pub/` directories are all listable — source files and uploads are browseable
 - `phpinfo.php` is publicly accessible — exposes PHP version, loaded modules, server paths, and configuration
-> 📸 *[Insert dirb scan terminal screenshot here]*
-> 📸 *[Insert browser screenshot of phpMyAdmin login page — http://192.168.56.103/phpMyAdmin/]*
-> 📸 *[Insert browser screenshot of phpinfo.php output — http://192.168.56.103/phpinfo.php]*
-> 📸 *[Insert browser screenshot of /dav/ directory listing — http://192.168.56.103/dav/]*
-> 📸 *[Insert browser screenshot of TWiki — http://192.168.56.103/twiki/]*
+**Screenshot:** ![dirb scan](screenshots/dirbscan.png)
+**Screenshot:** ![phpMyAdmin](screenshots/adminbrowser.png)
+**Screenshot:** ![phpinfo](screenshots/phpinfo.png)
+**Screenshot:** ![dav](screenshots/davbrowser.png)
+**Screenshot:** ![twiki](screenshots/twikibrowser.png)
 
 ---
 
