@@ -672,7 +672,7 @@ Body: Please login immediately to reset your credentials: http://192.168.56.102
 | Multi-Factor Authentication (MFA) | Even if credentials are stolen, MFA prevents unauthorized login     |
 | Email Security (SPF/DKIM/DMARC) | Prevents spoofed sender addresses from reaching the inbox             |
 | User Awareness Training   | Regular phishing simulations train employees to recognize real attacks      |
-| Password Managers         | Autofill only works on the correct domain — blocks credential entry on fakes|
+| Password Managers         | Autofill only works on the correct domain - blocks credential entry on fakes|
 | Email Filtering           | Anti-phishing tools flag suspicious emails before they reach the user       |
 | URL Inspection Policy     | Employees trained to inspect full URLs before entering credentials          |
 
